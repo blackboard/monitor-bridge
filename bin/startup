@@ -1,0 +1,45 @@
+#!/bin/bash
+
+cd $(dirname $0)
+cd ..
+BASE_DIR=$(pwd)
+
+source ${BASE_DIR}/bin/settings.sh
+
+if [ -n "$PID_FILE" -a -e "$PID_FILE" ]; then
+  echo "monitor-bridge is already running"
+  exit 1
+fi
+
+if [ -z "JMX_PORT" ]; then
+  echo "JMX port is not set, check setting.sh"
+  exit 1
+fi
+
+JAVA=${JAVA:-java}
+
+JAVA_OPTIONS="-server"
+JAVA_OPTIONS="$JAVA_OPTIONS -Dcom.sun.management.jmxremote.port=${JMX_PORT}"
+JAVA_OPTIONS="$JAVA_OPTIONS -Dcom.sun.management.jmxremote.ssl=false"
+JAVA_OPTIONS="$JAVA_OPTIONS -Dcom.sun.management.jmxremote.authenticate=false"
+
+MONITOR_OPTIONS="-cp $(echo ${BASE_DIR}/lib/*.jar | tr ' ' ':')"
+MONITOR_OPTIONS="$MONITOR_OPTIONS -Dconfig.file=${BASE_DIR}/conf/application.conf"
+MONITOR_OPTIONS="$MONITOR_OPTIONS -Dconfig.trace=loads"
+MONITOR_OPTIONS="$MONITOR_OPTIONS -Dbase.dir=${BASE_DIR}"
+MONITOR_OPTIONS="$MONITOR_OPTIONS -Dlogback.configurationFile=${BASE_DIR}/conf/logback.xml"
+
+COMMAND_LINE="$JAVA $JAVA_OPTIONS $MONITOR_OPTIONS blackboard.monitor.MonitorApplication"
+
+if [ -n "$PID_FILE" ]; then
+  nohup $COMMAND_LINE &
+  PID=`echo $!`
+  if ps -p $PID > /dev/null 2>&1; then
+    echo $PID > $PID_FILE
+  else
+    echo "monitor-bridge did not start"
+    exit 1
+  fi
+else
+  exec $COMMAND_LINE
+fi

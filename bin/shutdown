@@ -1,0 +1,20 @@
+#!/bin/bash
+
+cd $(dirname $0)
+cd ..
+BASE_DIR=$(pwd)
+
+source ${BASE_DIR}/bin/settings.sh
+
+if [ -n "$PID_FILE" ]; then
+  if [ -e "$PID_FILE" ]; then
+    kill `cat $PID_FILE`
+    rm -f $PID_FILE
+  else
+    echo "monitor-bridge is not running"
+    exit 1
+  fi
+else
+  echo "monitor-bridge is not configured as a daemon: \$PID_FILE is not set"
+  exit 1
+fi
