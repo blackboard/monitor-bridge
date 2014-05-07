@@ -7,9 +7,9 @@ import org.slf4j.LoggerFactory
 object MonitorApplication extends App {
   private val log = LoggerFactory.getLogger(MonitorApplication.getClass())
 
-  log.info("Monitor application starting...")
   val config = ConfigFactory.load()
   MBeanManager.get.registerMBeans(config)
+  log.info("monitor-bridge Started")
   loop()
 
   private def loop() = {
