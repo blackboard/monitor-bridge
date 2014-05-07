@@ -9,8 +9,8 @@ class PostgresMonitorProvider extends BaseMBean[PostgresMonitorProvider] {
   private var totalConnections: Long = _
   private var maxConnections: Long = _
   private var totalSessionTimeHours: Long = _
-  private var oldestSessionHours: Long = _
-  private var databaseSize: Long = _
+  private var longestSessionTimeHours: Long = _
+  private var instanceSize: Long = _
   private var totalLiveSize: Long = _
   private var totalDeadSize: Long = _
   private var totalTableScans: Long = _
@@ -25,9 +25,9 @@ class PostgresMonitorProvider extends BaseMBean[PostgresMonitorProvider] {
 
   def getTotalSessionTimeHours: Long = getData(getMbeanName, getCacheTime).totalSessionTimeHours
 
-  def getOldestSessionHours: Long = getData(getMbeanName, getCacheTime).oldestSessionHours
+  def getLongestSessionTimeHours: Long = getData(getMbeanName, getCacheTime).longestSessionTimeHours
 
-  def getDatabaseSize: Long = getData(getMbeanName, getCacheTime).databaseSize
+  def getInstanceSize: Long = getData(getMbeanName, getCacheTime).instanceSize
 
   def getTotalLiveSize: Long = getData(getMbeanName, getCacheTime).totalLiveSize
 
@@ -62,7 +62,7 @@ class PostgresMonitorProvider extends BaseMBean[PostgresMonitorProvider] {
         totalConnections = rs1.getLong(1)
         maxConnections = rs1.getLong(2)
         totalSessionTimeHours = rs1.getLong(3)
-        oldestSessionHours = rs1.getLong(4)
+        longestSessionTimeHours = rs1.getLong(4)
       }
       pstat1.close()
       rs1.close()
@@ -70,7 +70,7 @@ class PostgresMonitorProvider extends BaseMBean[PostgresMonitorProvider] {
       val pstat2 = conn.prepareStatement(GET_STORAGE_AND_ACCESS_PATTERNS)
       val rs2 = pstat2.executeQuery()
       if (rs2.next()) {
-        databaseSize = rs2.getLong(1)
+        instanceSize = rs2.getLong(1)
         totalLiveSize = rs2.getLong(2)
         totalDeadSize = rs2.getLong(3)
         totalTableScans = rs2.getLong(4)
@@ -90,7 +90,7 @@ class PostgresMonitorProvider extends BaseMBean[PostgresMonitorProvider] {
 
   private val GET_SESSION_INFO = "select Count(1) Total_Connections,\n(select setting from pg_settings where name = 'max_connections') " +
     "Max_Connections,\nEXTRACT(epoch from (sum(now() - backend_start))) / 3600 Total_Session_Time_Hours, \nEXTRACT(epoch from (max(now() - backend_start))) / " +
-    "3600 Oldest_Session_Hours\nfrom pg_stat_activity"
+    "3600 Longest_Session_Time_Hours\nfrom pg_stat_activity"
 
   private val GET_STORAGE_AND_ACCESS_PATTERNS = "SELECT (SELECT pg_catalog.pg_database_size(d.datname) FROM pg_catalog.pg_database d " +
     "where d.datname = current_database()) / 1048576 DATABASE_SIZE,\n  case when sum(sat.n_dead_tup) = 0 then 0\n  " +
